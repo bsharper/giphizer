@@ -1,4 +1,4 @@
-#!/usr/bin/python -tt
+#!/usr/bin/env python3 -tt
 
 # Giphizer 1.1.0
 # Copyright (c) 2016 Jason Jackson
@@ -15,18 +15,35 @@ import errno
 import fcntl
 import json
 import os
-import platform
 import re
 import socket
 import sys
 import tempfile
 from base64 import b64encode
 from os import path
-from urllib import urlencode, urlopen
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
-GIPHY_API_KEY = "dc6zaTOxFJmzC"  # Giphy's public beta API key
+GIPHY_API_KEY = ""  # Giphy's public beta API key"
 MAX_CACHED_GIFS = 1000           # Adjust freely; set to 0 to disable caching
 
+def get_giphy_api_key():
+    """
+    Retrieves the Giphy API key from the environment or a configuration file.
+    """
+    api_key = os.environ.get("GIPHY_API_KEY")
+    if api_key:
+        return api_key
+
+    config_path = path.expanduser("~/.config/giphy/api_key")
+    try:
+        return open(config_path, "r").read().replace("GIPHY_API_KEY=", "").strip()
+    except IOError:
+        pass
+
+    raise RuntimeError("Giphy API key not found in environment or configuration file")
+
+GIPHY_API_KEY = get_giphy_api_key()
 
 def main():
     """
@@ -65,7 +82,7 @@ def main():
 
     display_image(image_data, image_info["url"])
     if not args.bare:
-        print image_info["page"]
+        print(image_info["page"])
         display_logo()
 
 
@@ -104,7 +121,7 @@ def parse_command_line():
     # Massage the query received into a single trimmed string
     query = ""
     for arg in args.query:
-        arg = re.sub("\s+", " ", arg).strip()
+        arg = re.sub(r"\s+", " ", arg).strip()
         if arg != "":
             if query != "": query += " "
             query += arg
@@ -126,7 +143,7 @@ def read_options_from_file(options_path):
     all_args = []
 
     try:
-        with open(path.expanduser(options_path), "rU") as option_file:
+        with open(path.expanduser(options_path), "r", newline=None) as option_file:
             lines = option_file.readlines()
 
         for line in lines:
@@ -138,8 +155,7 @@ def read_options_from_file(options_path):
             all_args += args
     except IOError as ex:
         if ex.errno != errno.ENOENT:
-	        raise  # It's fine for the file not to exist, but any other error is bad
-
+            raise  # It's fine for the file not to exist, but any other error is bad
     return all_args
 
 
@@ -197,18 +213,19 @@ def choose_image(args):
     if args.max_rating is not None:
         url += "&rating=" + args.max_rating
 
-    response = json.load(urlopen(url))
+    response = json.load(urlopen(url))  
     if response["data"] == []:
         return None
 
     data = response["data"]
 
     if args.endpoint == "random":
+        r_data = data["images"]["original"]
         return {"id":     data["id"],
                 "page":   data["url"],
-                "url":    data["image_url"],
-                "width":  int(data["image_width"]),
-                "height": int(data["image_height"])}
+                "url":    r_data["url"],
+                "width":  int(r_data["width"]),
+                "height": int(r_data["height"])}
     else:
         # Endpoint is 'translate' or 'id'
         original = data["images"]["original"]
@@ -287,11 +304,11 @@ def display_image(image_data, image_name):
     open_esc = "\033]"  # "\033Ptmux;\033\033]" under tmux
     close_esc = "\a"    # "\a\033\\" under tmux
 
-    name = "name=%s;" % b64encode(image_name)
+    name = "name=%s;" % b64encode(image_name.encode()).decode()
     width = ""
     inline = "inline=1"
 
-    print "%s1337;File=%s%s%s:%s%s" % (open_esc, name, width, inline, b64encode(image_data), close_esc)
+    print("%s1337;File=%s%s%s:%s%s" % (open_esc, name, width, inline, b64encode(image_data).decode(), close_esc))
     return True
 
 
@@ -360,6 +377,6 @@ def fsync_dir(dir_path):
     finally:
         os.close(fd)
 
-
-# Do the things
-main()
+if __name__ == "__main__":
+    # Do the things
+    main()
