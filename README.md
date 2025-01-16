@@ -1,3 +1,10 @@
+## Update
+
+Used the (soon to be depreciated) 2to3 for most fixes. Did some minor cleanup (moved API key out of script) and some small changes to how the API works. Set the GIPHY_API_KEY environmental variable or put it under `~/.config/giphy/api_key` for the script to pick it up.
+The original code mostly worked great once updated to work with Python 3, I'm glad it was easy to update.
+
+## Original readme below:
+
 Have you ever though **Oh man, Giphy is great, but I wish I could use it in my terminal**?
 Well now you can! (Assuming you're an iTerm user...)
 
